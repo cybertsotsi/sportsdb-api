@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sports Schedule Finder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            padding-top: 40px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 18px 50px 18px 20px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-box:focus {
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #667eea;
+            font-size: 1.3em;
+        }
+
+        .autocomplete-results {
+            position: absolute;
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .autocomplete-results.show {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 15px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s ease;
+        }
+
+        .autocomplete-item:hover {
+            background: #f8f9fa;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .team-name {
+            font-weight: 600;
+            color: #333;
+            display: block;
+        }
+
+        .sport-type {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 3px;
+        }
+
+        .results-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            display: none;
+        }
+
+        .results-container.show {
+            display: block;
+        }
+
+        .result-header {
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        .result-header h2 {
+            color: #333;
+            font-size: 1.8em;
+        }
+
+        .result-header .sport-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-top: 10px;
+        }
+
+        .game-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .game-card:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transform: translateX(5px);
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .matchup {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .game-status {
+            background: #4ade80;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .game-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .detail-icon {
+            font-size: 1.2em;
+        }
+
+        .detail-label {
+            font-size: 0.85em;
+            color: #666;
+            display: block;
+        }
+
+        .detail-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .no-results-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .api-config {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .api-config h3 {
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .api-input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+
+        .btn {
+            background: white;
+            color: #667eea;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .game-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .game-details {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏆 Sports Schedule Finder</h1>
+            <p class="subtitle">Find upcoming games and TV schedules for your favorite teams</p>
+        </header>
+
+        <div class="api-config">
+            <h3>⚙️ TheSportsDB API Configuration</h3>
+            <p style="margin-bottom: 15px; opacity: 0.9;">Currently using premium API key: 123</p>
+            <input type="text" id="apiKey" class="api-input" placeholder="Enter different API key (optional)" value="123">
+            <button class="btn" onclick="saveApiConfig()">Update API Key</button>
+        </div>
+
+        <div class="search-container">
+            <input 
+                type="text" 
+                class="search-box" 
+                id="searchInput" 
+                placeholder="Search for a team or sport..."
+                autocomplete="off"
+            >
+            <span class="search-icon">🔍</span>
+            <div class="autocomplete-results" id="autocompleteResults"></div>
+        </div>
+
+        <div class="results-container" id="resultsContainer">
+            <!-- Results will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <script>
+        // TheSportsDB API Configuration
+        const API_BASE = 'https://www.thesportsdb.com/api/v1/json';
+        let API_KEY = '123'; // Your premium API key
+
+        // Save API configuration
+        function saveApiConfig() {
+            const customKey = document.getElementById('apiKey').value.trim();
+            API_KEY = customKey || '123';
+            alert('API key updated successfully!');
+        }
+
+        // Search input handler
+        const searchInput = document.getElementById('searchInput');
+        const autocompleteResults = document.getElementById('autocompleteResults');
+        const resultsContainer = document.getElementById('resultsContainer');
+
+        let searchTimeout;
+        searchInput.addEventListener('input', function(e) {
+            const query = e.target.value.trim();
+            
+            clearTimeout(searchTimeout);
+            
+            if (query.length < 2) {
+                autocompleteResults.classList.remove('show');
+                return;
+            }
+
+            // Debounce API calls
+            searchTimeout = setTimeout(() => {
+                fetchAutocompleteResults(query);
+            }, 300);
+        });
+
+        async function fetchAutocompleteResults(query) {
+            try {
+                const apiUrl = `${API_BASE}/${API_KEY}/searchteams.php?t=${encodeURIComponent(query)}`;
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                
+                if (data.teams && data.teams.length > 0) {
+                    displayAutocompleteResults(data.teams);
+                } else {
+                    autocompleteResults.classList.remove('show');
+                }
+            } catch (error) {
+                console.error('Error fetching teams:', error);
+                autocompleteResults.innerHTML = `
+                    <div class="autocomplete-item" style="color: #e74c3c; cursor: default;">
+                        <span class="team-name">Search Error</span>
+                        <span class="sport-type">Unable to connect to API. Please try again.</span>
+                    </div>
+                `;
+                autocompleteResults.classList.add('show');
+            }
+        }
+
+        function displayAutocompleteResults(teams) {
+            if (!teams || teams.length === 0) {
+                autocompleteResults.classList.remove('show');
+                return;
+            }
+
+            const html = teams.slice(0, 8).map(team => {
+                const teamName = team.strTeam || team.strAlternate || 'Unknown Team';
+                const sport = team.strSport || 'Unknown Sport';
+                const league = team.strLeague || '';
+                
+                return `
+                    <div class="autocomplete-item" onclick='selectTeam(${JSON.stringify(team).replace(/'/g, "&#39;")})'>
+                        <span class="team-name">${teamName}</span>
+                        <span class="sport-type">${sport}${league ? ' - ' + league : ''}</span>
+                    </div>
+                `;
+            }).join('');
+
+            autocompleteResults.innerHTML = html;
+            autocompleteResults.classList.add('show');
+        }
+
+        function selectTeam(team) {
+            const teamName = team.strTeam || team.strAlternate || 'Unknown Team';
+            searchInput.value = teamName;
+            autocompleteResults.classList.remove('show');
+            loadTeamSchedule(team);
+        }
+
+        async function loadTeamSchedule(team) {
+            const teamName = team.strTeam || team.strAlternate || 'Unknown Team';
+            const sport = team.strSport || 'Unknown Sport';
+            const teamId = team.idTeam;
+            
+            resultsContainer.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading schedule for ${teamName}...</p>
+                </div>
+            `;
+            resultsContainer.classList.add('show');
+
+            try {
+                // Fetch TV events (events with TV broadcast info)
+                const tvUrl = `${API_BASE}/${API_KEY}/eventstv.php?id=${teamId}`;
+                const tvResponse = await fetch(tvUrl);
+                const tvData = await tvResponse.json();
+                
+                // Also fetch next 5 events as backup
+                const nextUrl = `${API_BASE}/${API_KEY}/eventsnext.php?id=${teamId}`;
+                const nextResponse = await fetch(nextUrl);
+                const nextData = await nextResponse.json();
+                
+                // Combine and prioritize TV events
+                const tvEvents = tvData.event || [];
+                const nextEvents = nextData.events || [];
+                
+                // Merge events, prioritizing TV events
+                const allEvents = [...tvEvents];
+                nextEvents.forEach(event => {
+                    if (!allEvents.find(e => e.idEvent === event.idEvent)) {
+                        allEvents.push(event);
+                    }
+                });
+                
+                displaySchedule(team, allEvents);
+            } catch (error) {
+                console.error('Error fetching schedule:', error);
+                resultsContainer.innerHTML = `
+                    <div class="no-results">
+                        <div class="no-results-icon">⚠️</div>
+                        <h3>Error Loading Schedule</h3>
+                        <p>Unable to fetch schedule for ${teamName}. Please try again.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function displaySchedule(team, upcomingEvents) {
+            const teamName = team.strTeam || team.strAlternate || 'Unknown Team';
+            const sport = team.strSport || 'Unknown Sport';
+            const league = team.strLeague || '';
+            const teamBadge = team.strBadge || team.strTeamBadge || '';
+
+            if (!upcomingEvents || upcomingEvents.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="result-header">
+                        ${teamBadge ? `<img src="${teamBadge}" alt="${teamName}" style="max-width: 80px; margin-bottom: 15px;">` : ''}
+                        <h2>${teamName}</h2>
+                        <span class="sport-badge">${sport}${league ? ' - ' + league : ''}</span>
+                    </div>
+                    <div class="no-results">
+                        <div class="no-results-icon">📅</div>
+                        <h3>No Upcoming Games</h3>
+                        <p>There are currently no scheduled upcoming games for ${teamName}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const upcomingHtml = upcomingEvents.map(event => {
+                const homeTeam = event.strHomeTeam || 'TBD';
+                const awayTeam = event.strAwayTeam || 'TBD';
+                const eventDate = event.dateEvent || 'TBD';
+                const eventTime = event.strTime || event.strTimeLocal || 'TBD';
+                const venue = event.strVenue || 'TBD';
+                const tvStation = event.strTVStation || 'Not broadcast';
+                const eventName = event.strEvent || `${homeTeam} vs ${awayTeam}`;
+                
+                // Special styling for games with TV broadcast
+                const hasTVBroadcast = event.strTVStation && event.strTVStation !== 'Not broadcast';
+                
+                return `
+                    <div class="game-card">
+                        <div class="game-header">
+                            <div class="matchup">${eventName}</div>
+                            <div class="game-status" style="background: ${hasTVBroadcast ? '#667eea' : '#4ade80'};">
+                                ${hasTVBroadcast ? '📺 On TV' : 'Upcoming'}
+                            </div>
+                        </div>
+                        <div class="game-details">
+                            <div class="detail-item">
+                                <span class="detail-icon">📅</span>
+                                <div>
+                                    <span class="detail-label">Date</span>
+                                    <div class="detail-value">${formatDate(eventDate)}</div>
+                                </div>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-icon">🕐</span>
+                                <div>
+                                    <span class="detail-label">Time</span>
+                                    <div class="detail-value">${eventTime}</div>
+                                </div>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-icon">📺</span>
+                                <div>
+                                    <span class="detail-label">TV Channel</span>
+                                    <div class="detail-value" style="${hasTVBroadcast ? 'color: #667eea; font-weight: 700;' : ''}">${tvStation}</div>
+                                </div>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-icon">📍</span>
+                                <div>
+                                    <span class="detail-label">Venue</span>
+                                    <div class="detail-value">${venue}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            resultsContainer.innerHTML = `
+                <div class="result-header">
+                    ${teamBadge ? `<img src="${teamBadge}" alt="${teamName}" style="max-width: 80px; margin-bottom: 15px; border-radius: 10px;">` : ''}
+                    <h2>${teamName}</h2>
+                    <span class="sport-badge">${sport}${league ? ' - ' + league : ''}</span>
+                </div>
+                <h3 style="margin: 20px 0 15px 0; color: #333;">Upcoming Games</h3>
+                ${upcomingHtml}
+            `;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr || dateStr === 'TBD') return dateStr;
+            try {
+                const date = new Date(dateStr);
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                return date.toLocaleDateString('en-US', options);
+            } catch (e) {
+                return dateStr;
+            }
+        }
+
+        function formatTime(timeStr) {
+            if (!timeStr || timeStr === 'TBD') return timeStr;
+            return timeStr;
+        }
+
+        // Close autocomplete when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-container')) {
+                autocompleteResults.classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>
